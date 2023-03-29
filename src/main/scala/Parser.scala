@@ -8,7 +8,7 @@ object Parser extends JavaTokenParsers {
     case name ~ _ ~ expr  => NodeAssign(name, expr)
   }
 
-  def expr: Parser[NodeExpr] = (text | number | array | obj) ^^ {
+  def expr: Parser[NodeExpr] = (text | addsub | array | obj) ^^ {
      content => NodeExpr(content)
   }
 
@@ -16,10 +16,18 @@ object Parser extends JavaTokenParsers {
     text => NodeText(text)
   }
 
-  def number: Parser[NodeNumber] = """([1-9][0-9]*)|0""".r ^^ {
+  def number: Parser[Node] = """([1-9][0-9]*)|0""".r ^^ {
     number => NodeNumber(number.toInt)
   }
 
+  def addsub: Parser[Node] = number ~ rep(("+" | "-") ~ number) ^^ {
+    case number ~ Nil => number
+    case number ~ rhs_ops =>  rhs_ops.foldLeft(number)((currNum, rhs) => rhs match {
+      case "+" ~ plusNum => NodeAdd(currNum, plusNum)
+      case "-" ~ minusNum => NodeMinus(currNum, minusNum)
+      case _ =>  ???
+    } )
+  }
   def array: Parser[NodeArray] = "[" ~> repsep(expr, ",")  <~ "]" ^^ {
     exprs => NodeArray(exprs)
   }
