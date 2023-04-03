@@ -1,11 +1,7 @@
-ThisBuild / version := "0.1.0-SNAPSHOT"
+name := "simpleParser"
 
-ThisBuild / scalaVersion := "2.13.8"
+version := "1.0"
 
-lazy val root = (project in file("."))
-  .settings(
-    name := "simpleParser"
-  )
-
+scalaVersion := "2.13.10"
 
 libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "2.2.0"
