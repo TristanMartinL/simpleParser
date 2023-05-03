@@ -21,7 +21,7 @@ object Main {
       case "parse"::rest => evaluateProgram(rest.mkString(" "))
       case "interpret"::rest => {
         val parseResult = Parser.parse(rest.mkString(" "));
-        val result = new Interpreter(() => SimpleText(scala.io.StdIn.readLine()), Console.print).interpret(parseResult.get)
+        val result = new Interpreter().interpret(parseResult.get)
         Console.println(result);
       }
       case _ =>
