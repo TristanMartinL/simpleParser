@@ -3,7 +3,11 @@ import scala.util.parsing.combinator._
 object Parser extends JavaTokenParsers {
 
   // Parse the input string (code) and start with the rule for assign
-  def parse(code: String): ParseResult[NodeAssign] = parseAll(assign, code)
+  def parse(code: String): ParseResult[NodeBlock] = parseAll(block, code)
+
+  def block: Parser[NodeBlock] = rep1(assign <~ ";") ^^ {
+    blocks => NodeBlock(blocks)
+  }
 
   /** parse a variable declaration:
    *
@@ -19,7 +23,7 @@ object Parser extends JavaTokenParsers {
    *  ^^         match operator, puts all matched parts into the variables, declared after the case keyword
    *
   **/
-  def assign: Parser[NodeAssign] = "var" ~> """[a-z]+""".r ~ "=" ~ expr  ^^ {
+  def assign: Parser[NodeAssign] = "var" ~> id ~ "=" ~ expr  ^^ {
     /**
      *  process matched input: grab the name of the declared variable (matched by the regex), skip the equals symbol (=) and take whatever expr could parse
      *
@@ -35,14 +39,28 @@ object Parser extends JavaTokenParsers {
    *
    * return a generic expression Node, which is a wrapper for the concrete content (NodeText, NodeNumber, NodeArray, NodeObject)
    */
-  def expr: Parser[NodeExpr] = (text | number | array | obj) ^^ {
+  def expr: Parser[NodeExpr] = (addsub | array | obj | text) ^^ {
      content => NodeExpr(content)
   }
 
   // parse a string: single quote, a character, characters, numbers and whitespace mixed, single quote
-  def text: Parser[NodeText] = "'" ~> """[a-zA-Z][a-zA-Z0-9\x20]*""".r <~ "'" ^^  {
+  def text: Parser[NodeText] = "'" ~> """[a-zA-Z][a-zA-Z0-9\x20]+""".r <~ "'" ^^  {
     text => NodeText(text)
   }
+
+  def id: Parser[NodeId] = """[a-z]+""".r ^^ {
+    name => NodeId(name)
+  }
+
+  def varacc: Parser[NodeVarAccess] = id ^^ {
+    nodeid => NodeVarAccess(nodeid)
+  }
+
+  def addsub: Parser[Node] = chainl1(multdiv, "+" ^^^ {(lhs: Node, rhs: Node) => NodeAdd(lhs, rhs)}
+                                          | "-" ^^^ {(lhs: Node, rhs: Node) => NodeSub(lhs, rhs)})
+
+  def multdiv: Parser[Node] = chainl1(number | varacc, "*" ^^^ {(lhs: Node, rhs: Node) => NodeMult(lhs, rhs)} |
+                                              "/" ^^^ {(lhs: Node, rhs: Node) => NodeDiv(lhs, rhs)})
 
   // parse numbers, zeros at the start (01, 042) are not allowed (only if the number is zero)
   def number: Parser[NodeNumber] = """([1-9][0-9]*)|0""".r ^^ {
